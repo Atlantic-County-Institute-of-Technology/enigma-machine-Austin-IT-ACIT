@@ -136,6 +136,7 @@ def vigenere_cipher():
     temp_key = ""
     key = ""
     final = ""
+    upper_pass = 0
     while stringing:
         string = get_string()
     while keying:
@@ -157,11 +158,10 @@ def vigenere_cipher():
 
             else:
                 upper_encrypted += letter
-
         else:
             encrypted += letter
             upper_encrypted += letter
-    for i in upper_encrypted:
+    for i in upper_encrypted[upper_pass]:
         for k in temp_key:
             # print(k)
             if i.isalpha():
@@ -170,11 +170,13 @@ def vigenere_cipher():
                     final_ordi = chr((ord(i) - 65 + combined_ordi) % 26 + 65)
                     print( i, combined_ordi, final_ordi, upper_encrypted, k,  key, temp_key)
                     vig_cipher += final_ordi
+                    upper_pass += 1
 
                 else:
                     combined_ordi = ord(k) - ord("A")
                     final_ordi = chr((ord(i) - 65 - combined_ordi) % 26 + 65)
                     vig_cipher += final_ordi
+                    upper_pass += 1
 
             else:
                 vig_cipher += i
