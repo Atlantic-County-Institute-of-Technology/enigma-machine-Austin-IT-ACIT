@@ -7,7 +7,20 @@
 import os
 import inquirer3
 
-ROTATION = 3
+file_sentence = 'text.txt'
+file_KEY = 'KEY.txt'
+
+encode = False
+stringing = True
+keying = False
+
+encrypted = ""
+upper_encrypted = ""
+vig_cipher = ""
+final = ""
+string = ""
+key = ""
+
 
 def prompt_list_message(in_message, in_choices):
     # prompt question from input
@@ -24,155 +37,184 @@ def prompt_list_message(in_message, in_choices):
     os.system('cls' if os.name == 'nt' else 'clear')
     return answer["choice"]
 
+def change_string():
+    with open(file_sentence, 'r+') as file:
+        file.seek(0)
+        file.truncate()
+        content = input("What is the Sentence wanted to be shown? - ")
+        file.write(content)
+        os.system('cls' if os.name == 'nt' else 'clear')
 
-def generate_number_list():
-    WORD_LIST = []
-    with open('assets/words_alpha.txt', 'r') as dictionary:
-        for word in dictionary.readlines():
-            WORD_LIST.append(word.strip())
-    return WORD_LIST
+def change_key():
+    with open(file_KEY, 'r+') as file:
+        file.seek(0)
+        file.truncate()
+        content = input("What is the Key wanted to be shown? - ")
+        file.write(content)
+        os.system('cls' if os.name == 'nt' else 'clear')
+
+def get_string():
+    global stringing, string, keying
+    while stringing:
+        try:
+            string = ""
+            with open(file_sentence, 'r+') as file:
+                string = file.read()
+                print(f"your string is {string}")
+                response = prompt_list_message("Please choose an option (string / sentence):", ["See File Text",
+                                               "Change File Text", "Key"])
+                if response == "See File Text":
+                    print(string)
+                    get_string()
+                elif response == "Change File Text":
+                    print(f"The File says {string}")
+                    change_string()
+                    get_string()
+                elif response == "Key":
+                    stringing = False
+                    keying = True
+            return string
+
+        except FileNotFoundError as e:
+            print(e)
+            print("Would you like to create or restart the code")
+            response = prompt_list_message("Please choose an option (string / sentence):", ["Create File", "Restart Code",
+                                           "Exit"])
+            if response == "Create File":
+                file_name = file_sentence
+                content = input("What is the text wanted to be said?")
+
+                # Open the file in write mode ('w')
+                with open(file_name, 'w') as file:
+                    file.write(content)
+
+                print(f"File '{file_name}' created and content written.")
+
+            elif response == "Restart Code":
+                pass
+            elif response == "Exit":
+                stringing = False
+            return stringing
 
 
-def decode():
-    global ROTATION
-    encrypted = caesar_cipher_decode(message_file, ROTATION)
-    print(f"The Rotation is {ROTATION}")
-    print(encrypted)
-    response = prompt_list_message("Please choose an option:", ["Increase Rotation", "Decrease Rotation", "Menu"])
-    match response:
-        case "Increase Rotation":
-            encrypted = ""
-            increase_rotation()
-            decode()
-        case "Decrease Rotation":
-            encrypted = ""
-            decrease_rotation()
-            decode()
-        case "Menu":
-            main()
+def get_key():
+    global keying, key, temp_key
+
+    while keying:
+        try:
+            key = ""
+            temp_key = ""
+            with open(file_KEY, 'r+') as file:
+                key = file.read()
+                temp_key = key.upper()
+                print(f"your Key is {key}")
+                response = prompt_list_message("Please choose an option (key):", ["See File Text", "Change File Text",
+                                               "Cypher"])
+                if response == "See File Text":
+                    print(key)
+                    get_key()
+                elif response == "Change File Text":
+                    print(f"The File says {key}")
+                    change_key()
+                    get_key()
+                elif response == "Cypher":
+                    keying = False
+            return key, temp_key
+
+        except FileNotFoundError as e:
+            print(e)
+            print("Would you like to create or restart the code")
+            response = prompt_list_message("Please choose an option (key):", ["Create File", "Restart Code", "Exit"])
+            if response == "Create File":
+
+                file_name = file_KEY
+                content = input("What is the text wanted to be said?")
+
+                # Open the file in write mode ('w')
+                with open(file_name, 'w') as file:
+                    file.write(content)
+
+                print(f"File '{file_name}' created and content written.")
+
+            elif response == "Restart Code":
+                # main()
+                pass
+            elif response == "Exit":
+                keying = False
+            return keying
 
 
-def encode():
-    global ROTATION
-    WORD_LIST = generate_number_list()
-    encrypted = caesar_cipher(message_file, ROTATION)
-    print(f"The Rotation is {ROTATION}")
-    print(encrypted)
-    response = prompt_list_message("Please choose an option:", ["Increase Rotation", "Decrease Rotation", "Auto", "Menu"])
-    match response:
-        case "Increase Rotation":
-            encrypted = ""
-            increase_rotation()
-            encode()
-        case "Decrease Rotation":
-            encrypted = ""
-            decrease_rotation()
-            encode()
-        case "Auto":
-            auto = True
-            while auto:
-                if encrypted in WORD_LIST:
-                    auto = False
-                    encrypted = ""
-                    increase_rotation()
-                    encode()
+def vigenere_cipher():
+    global string, key, final, temp_key
+    final = ''
+    string = get_string()
+    key, temp_key = get_key()
+    key_letters = [c.upper() for c in key if c.isalpha()]
+    if not key_letters:
+        print("No valid alphabetic key found. Aborting cipher operation.")
+        return string, string
+
+    key_index = 0
+    if encode:
+        for ch in string:
+            if ch.isalpha():
+                shift = ord(temp_key[key_index % len(key_letters)]) - ord('A')
+                if ch.isupper():
+                    final += chr((ord(ch) + shift - ord('A')) % 26 + ord('A'))
                 else:
-                    auto = False
-        case "Menu":
-            main()
+                    final += chr((ord(ch) + shift - ord('a')) % 26 + ord('a'))
+                key_index += 1
+            else:
+                final += ch
+        return string, final
+    else:
+        for ch in string:
+            if ch.isalpha():
+                shift = ord(temp_key[key_index % len(key_letters)]) - ord('A')
+                if ch.isupper():
+                    final += chr((ord(ch) - shift - ord('A')) % 26 + ord('A'))
+                else:
+                    final += chr((ord(ch) - shift - ord('a')) % 26 + ord('a'))
+                key_index += 1
+            else:
+                final += ch
+        return string, final
 
+def main_menu():
+    global encode, string, key, final, encrypted, stringing, keying
+    response = prompt_list_message("Please choose an option:", ["See Files", "Encode", "Decode", "Exit"])
+    if response == "See Files":
+        print(f"files for phrases / sentences - ({file_sentence}), files for keys - ({file_KEY})")
+        main_menu()
 
-def increase_rotation():
-    global message_file
-    global ROTATION
-    ROTATION += 1
-    encrypted = ""
-    encrypted = caesar_cipher_decode(message_file, ROTATION)
-    return ROTATION, encrypted
+    elif response == "Encode":
+        encode = True
+        string, final = vigenere_cipher()
+        print(f"The beginning phrase '{string}' || and the Ending phrase '{final}'")
+        response = prompt_list_message("Please choose an option:", ["Restart", "Quit"])
+        if response == "Restart":
+            stringing = True
+            keying = True
+            encode = False
+            main_menu()
 
+        elif response == "Quit":
+            exit()
+    elif response == "Decode":
+        string, final = vigenere_cipher()
+        print(f"The Beginning phrase '{string}' || and the Ending phrase '{final}'")
+        response = prompt_list_message("Please choose an option:", ["Restart", "Quit"])
+        if response == "Restart":
+            stringing = True
+            keying = True
+            encode = False
+            main_menu()
 
-def decrease_rotation():
-    global message_file
-    global ROTATION
-    ROTATION -= 1
-    encrypted = ""
-    encrypted = caesar_cipher(message_file, ROTATION)
-    return ROTATION, encrypted
-
-
-def caesar_cipher(message_file, rotation):
-    encrypted = ""
-    for letter in message_file:
-        if letter.isalpha():
-            charset = (65 if letter.isupper() else 97)
-            encrypted += chr((ord(letter) - charset - rotation) % 26 + charset)
-        else:
-            encrypted += letter
-    return encrypted
-
-
-def caesar_cipher_decode(message_file, rotation):
-    encrypted = ""
-    for letter in message_file:
-        if letter.isalpha():
-            charset = (65 if letter.isupper() else 97)
-            encrypted += chr((ord(letter) - charset + rotation) % 26 + charset)
-        else:
-            encrypted += letter
-    return encrypted
-
-
-def remove_file():
-    os.remove(message_file)
-
-message_file = 'text.txt'
-
-def main():
-    while True:
-        with open("text.txt", 'r+') as f:
-            try:
-                print("Text file is already created")
-                response = prompt_list_message("Please choose an option:", ["Remove", "Change Content", "See Content", "Exit", "Encode", "Decode"])
-                match response:
-                    case "Exit":
-                        print("Goodbye!")
-                        exit()
-                    case "Remove":
-                        f.close()
-                        os.remove(f)
-                        print("Message file has been removed")
-                    case "Change Content":
-                        print("Changing Content")
-                        content = input("What is the text wanted to be said?")
-                        # Open the file in write mode ('w')
-                        file.write(content)
-                    case "Encode":
-                        encode()
-                    case "Decode":
-                        decode()
-                    case "See Content":
-                        message_test = open('text.txt', 'r')
-                        content = message_test.read()
-                        print(content)
-                        message_test.close()
-            except FileNotFoundError:
-                message_file = 'text.txt'
-                print("Error: The file 'non_existent_file.txt' was not found.")
-                print(f)
-                # You could also create the file here, or prompt the user for a valid path.
-                response = prompt_list_message("Please choose an option:", ["Create one", "Leave"])
-                match response:
-                    case "Create one":
-                        file_name = "text.txt"
-                        content = input("What is the text wanted to be showed?")
-
-                        # Open the file in write mode ('w')
-                        with open(file_name, 'w') as file:
-                            file.write(content)
-                        print(f"File '{file_name}' created and content written.")
-                    case "Leave":
-                        exit()
+        elif response == "Quit":
+            exit()
+    elif response == "Exit":
+        exit()
 
 
 if __name__ == "__main__":
-    main()
+    main_menu()
